@@ -35,6 +35,7 @@ public interface SPMapper {
     List<Name> getNames(Map<String, Object> parms);
     List<Name> getNamesWithArray(Map<String, Object> parms);
     List<List<?>> getNamesAndItems();
+    List<Name> getNamesAndItemsLinked();
     
     // annotated
     @Select({"{call sptest.adder(",
