@@ -150,6 +150,19 @@ public class ResultMapping {
       if (resultMapping.nestedQueryId != null && resultMapping.column == null && resultMapping.composites.size() == 0) {
         throw new IllegalStateException("Missing column attribute for nested select in property " + resultMapping.property);
       }
+      if (resultMapping.getResultSet() != null) {
+        int numColums = 0;
+        if (resultMapping.column != null) {
+          numColums = resultMapping.column.split(",").length;
+        }
+        int numForeignColumns = 0;
+        if (resultMapping.foreignColumn != null) {
+          numForeignColumns = resultMapping.foreignColumn.split(",").length;
+        }
+        if (numColums != numForeignColumns) {
+          throw new IllegalStateException("There should be the same number of columns and foreignColumns in property " + resultMapping.property);
+        }
+      }
     }
     
     private void resolveTypeHandler() {
