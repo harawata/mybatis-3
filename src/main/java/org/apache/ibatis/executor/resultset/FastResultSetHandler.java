@@ -227,7 +227,7 @@ public class FastResultSetHandler implements ResultSetHandler {
   protected void handleResultSet(ResultSetWrapper rsw, ResultMap resultMap, List<Object> multipleResults, ResultMapping parentMapping) throws SQLException {
     try {
       if (parentMapping != null) {
-        handleRowValues(rsw, resultMap, null, rowBounds, parentMapping);
+        handleRowValues(rsw, resultMap, null, null, parentMapping); //rowbounds is ignored 
       } else {
         if (resultHandler == null) {
           DefaultResultHandler defaultResultHandler = new DefaultResultHandler(objectFactory);
