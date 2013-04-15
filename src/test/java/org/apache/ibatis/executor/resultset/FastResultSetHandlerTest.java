@@ -85,7 +85,7 @@ public class FastResultSetHandlerTest {
     final ResultHandler resultHandler = null;
     final BoundSql boundSql = null;
     final RowBounds rowBounds = new RowBounds(0, 100);
-    final FastResultSetHandler fastResultSetHandler = new FastResultSetHandler(executor, ms, parameterHandler, resultHandler, boundSql, rowBounds);
+    final DefaultResultSetHandler fastResultSetHandler = new DefaultResultSetHandler(executor, ms, parameterHandler, resultHandler, boundSql, rowBounds);
 
     when(stmt.getResultSet()).thenReturn(rs);
     when(rs.getMetaData()).thenReturn(rsmd);
