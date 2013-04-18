@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+       Copyright 2009-2013 The MyBatis Team
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.apache.ibatis.submitted.joined_vs_multirs.Mapper">
+
+  <resultMap type="org.apache.ibatis.submitted.joined_vs_multirs.Parent" id="parentResult">
+    <id column="id" property="id"/>
+    <result column="name" property="name"/>
+    <result column="team" property="team"/>
+    <collection property="children1" column="id" foreignColumn="parent_id" resultSet="c1" resultMap="childResult" />
+    <collection property="children2" column="id" foreignColumn="parent_id" resultSet="c2" resultMap="childResult" />
+    <collection property="children3" column="id" foreignColumn="parent_id" resultSet="c3" resultMap="childResult" />
+    <collection property="children4" column="id" foreignColumn="parent_id" resultSet="c4" resultMap="childResult" />
+    <collection property="children5" column="id" foreignColumn="parent_id" resultSet="c5" resultMap="childResult" />
+    <collection property="children6" column="id" foreignColumn="parent_id" resultSet="c6" resultMap="childResult" />
+  </resultMap>
+  <select id="getMultiRsSp" statementType="CALLABLE" resultMap="parentResult" resultSets="parent,c1,c2,c3,c4,c5,c6">
+    {call getmultirs(#{team,jdbcType=INTEGER,mode=IN})}
+  </select>
+
+  <resultMap type="org.apache.ibatis.submitted.joined_vs_multirs.Parent" id="joinedResult">
+    <id column="parent_id" property="id"/>
+    <result column="parent_name" property="name"/>
+    <result column="team" property="team"/>
+    <collection property="children1" resultMap="childResult" columnPrefix="c1_"/>
+    <collection property="children2" resultMap="childResult" columnPrefix="c2_"/>
+    <collection property="children3" resultMap="childResult" columnPrefix="c3_"/>
+    <collection property="children4" resultMap="childResult" columnPrefix="c4_"/>
+    <collection property="children5" resultMap="childResult" columnPrefix="c5_"/>
+    <collection property="children6" resultMap="childResult" columnPrefix="c6_"/>
+  </resultMap>
+  <select id="getJoinedSp" statementType="CALLABLE" resultMap="joinedResult">
+    {call getjoined(#{team,jdbcType=INTEGER,mode=IN})}
+  </select>
+  <select id="getJoined" resultMap="joinedResult">
+    select
+    parent.id as parent_id,
+    parent.name as parent_name,
+    team,
+    c1.id as c1_id,
+    c1.parent_id as c1_parent_id,
+    c1.f1 as c1_f1,
+    c1.f2 as c1_f2,
+    c1.f3 as c1_f3,
+    c1.f4 as c1_f4,
+    c1.f5 as c1_f5,
+    c2.id as c2_id,
+    c2.parent_id as c2_parent_id,
+    c2.f1 as c2_f1,
+    c2.f2 as c2_f2,
+    c2.f3 as c2_f3,
+    c2.f4 as c2_f4,
+    c2.f5 as c2_f5,
+    c3.id as c3_id,
+    c3.parent_id as c3_parent_id,
+    c3.f1 as c3_f1,
+    c3.f2 as c3_f2,
+    c3.f3 as c3_f3,
+    c3.f4 as c3_f4,
+    c3.f5 as c3_f5,
+    c4.id as c4_id,
+    c4.parent_id as c4_parent_id,
+    c4.f1 as c4_f1,
+    c4.f2 as c4_f2,
+    c4.f3 as c4_f3,
+    c4.f4 as c4_f4,
+    c4.f5 as c4_f5,
+    c5.id as c5_id,
+    c5.parent_id as c5_parent_id,
+    c5.f1 as c5_f1,
+    c5.f2 as c5_f2,
+    c5.f3 as c5_f3,
+    c5.f4 as c5_f4,
+    c5.f5 as c5_f5,
+    c6.id as c6_id,
+    c6.parent_id as c6_parent_id,
+    c6.f1 as c6_f1,
+    c6.f2 as c6_f2,
+    c6.f3 as c6_f3,
+    c6.f4 as c6_f4,
+    c6.f5 as c6_f5
+    from parent
+    left join child c1 on c1.parent_id = parent.id
+    left join child c2 on c2.parent_id = parent.id
+    left join child c3 on c3.parent_id = parent.id
+    left join child c4 on c4.parent_id = parent.id
+    left join child c5 on c5.parent_id = parent.id
+    left join child c6 on c6.parent_id = parent.id
+    where parent.team = #{team}
+    order by parent.id, c1.id, c2.id, c3.id, c4.id, c5.id, c6.id
+  </select>
+
+  <resultMap type="org.apache.ibatis.submitted.joined_vs_multirs.Parent" id="nestedSelectResult">
+    <id column="id" property="id"/>
+    <result column="name" property="name"/>
+    <result column="team" property="team"/>
+    <collection property="children1" column="id" select="getChildByParentId" />
+    <collection property="children2" column="id" select="getChildByParentId" />
+    <collection property="children3" column="id" select="getChildByParentId" />
+    <collection property="children4" column="id" select="getChildByParentId" />
+    <collection property="children5" column="id" select="getChildByParentId" />
+    <collection property="children6" column="id" select="getChildByParentId" />
+  </resultMap>
+  <select id="getNestedSelect" resultMap="nestedSelectResult">
+    select * from parent where team = #{team}
+  </select>
+
+  <resultMap type="org.apache.ibatis.submitted.joined_vs_multirs.Child" id="childResult">
+    <id column="id" property="id"/>
+    <result column="parent_id" property="parentId"/>
+    <result column="f1" property="f1"/>
+    <result column="f2" property="f2"/>
+    <result column="f3" property="f3"/>
+    <result column="f4" property="f4"/>
+    <result column="f5" property="f5"/>
+  </resultMap>
+  <select id="getChildByParentId" resultMap="childResult">
+    select * from child where parent_id = #{parentId}
+  </select>
+
+</mapper>
