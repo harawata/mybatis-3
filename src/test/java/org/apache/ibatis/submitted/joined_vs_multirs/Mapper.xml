@@ -110,12 +110,12 @@
     <id column="id" property="id"/>
     <result column="name" property="name"/>
     <result column="team" property="team"/>
-    <collection property="children1" column="id" select="getChildByParentId" />
-    <collection property="children2" column="id" select="getChildByParentId" />
-    <collection property="children3" column="id" select="getChildByParentId" />
-    <collection property="children4" column="id" select="getChildByParentId" />
-    <collection property="children5" column="id" select="getChildByParentId" />
-    <collection property="children6" column="id" select="getChildByParentId" />
+    <collection property="children1" column="id" select="getChildByParentId1" />
+    <collection property="children2" column="id" select="getChildByParentId2" />
+    <collection property="children3" column="id" select="getChildByParentId3" />
+    <collection property="children4" column="id" select="getChildByParentId4" />
+    <collection property="children5" column="id" select="getChildByParentId5" />
+    <collection property="children6" column="id" select="getChildByParentId6" />
   </resultMap>
   <select id="getNestedSelect" resultMap="nestedSelectResult">
     select * from parent where team = #{team}
@@ -130,8 +130,23 @@
     <result column="f4" property="f4"/>
     <result column="f5" property="f5"/>
   </resultMap>
-  <select id="getChildByParentId" resultMap="childResult">
-    select * from child where parent_id = #{parentId}
+  <select id="getChildByParentId1" resultMap="childResult">
+    select * from child as c1 where parent_id = #{parentId}
+  </select>
+  <select id="getChildByParentId2" resultMap="childResult">
+    select * from child as c2 where parent_id = #{parentId}
+  </select>
+  <select id="getChildByParentId3" resultMap="childResult">
+    select * from child as c3 where parent_id = #{parentId}
+  </select>
+  <select id="getChildByParentId4" resultMap="childResult">
+    select * from child as c4 where parent_id = #{parentId}
+  </select>
+  <select id="getChildByParentId5" resultMap="childResult">
+    select * from child as c5 where parent_id = #{parentId}
+  </select>
+  <select id="getChildByParentId6" resultMap="childResult">
+    select * from child as c6 where parent_id = #{parentId}
   </select>
 
 </mapper>
