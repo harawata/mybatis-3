@@ -109,7 +109,7 @@ public class MapWrapper extends BaseWrapper {
       if (map.containsKey(prop.getIndexedName())) {
         MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
         if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
-          return map.containsKey(name);
+          return map.containsKey(prop.getName());
         } else {
           return metaValue.hasGetter(prop.getChildren());
         }
