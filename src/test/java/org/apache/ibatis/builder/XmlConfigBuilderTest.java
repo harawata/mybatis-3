@@ -43,6 +43,8 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.logging.slf4j.Slf4jImpl;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
+import org.apache.ibatis.scripting.xmltags.MvelExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.OgnlExpressionLanguage;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.AutoMappingBehavior;
 import org.apache.ibatis.session.AutoMappingUnknownColumnBehavior;
@@ -100,6 +102,7 @@ public class XmlConfigBuilderTest {
     assertNull(config.getLogImpl());
     assertNull(config.getConfigurationFactory());
     assertThat(config.getTypeHandlerRegistry().getTypeHandler(RoundingMode.class)).isInstanceOf(EnumTypeHandler.class);
+    assertThat(config.getExpressionLanguage()).isInstanceOf(OgnlExpressionLanguage.class);
     inputStream.close();
   }
 
@@ -211,6 +214,8 @@ public class XmlConfigBuilderTest {
       assertThat(config.getObjectWrapperFactory()).isInstanceOf(CustomObjectWrapperFactory.class);
 
       assertThat(config.getReflectorFactory()).isInstanceOf(CustomReflectorFactory.class);
+
+      assertThat(config.getExpressionLanguage()).isInstanceOf(MvelExpressionLanguage.class);
 
       ExamplePlugin plugin = (ExamplePlugin)config.getInterceptors().get(0);
       assertThat(plugin.getProperties().size()).isEqualTo(1);

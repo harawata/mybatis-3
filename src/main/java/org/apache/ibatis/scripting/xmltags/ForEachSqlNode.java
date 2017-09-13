@@ -27,7 +27,6 @@ import org.apache.ibatis.session.Configuration;
 public class ForEachSqlNode implements SqlNode {
   public static final String ITEM_PREFIX = "__frch_";
 
-  private final ExpressionEvaluator evaluator;
   private final String collectionExpression;
   private final SqlNode contents;
   private final String open;
@@ -38,7 +37,6 @@ public class ForEachSqlNode implements SqlNode {
   private final Configuration configuration;
 
   public ForEachSqlNode(Configuration configuration, SqlNode contents, String collectionExpression, String index, String item, String open, String close, String separator) {
-    this.evaluator = new ExpressionEvaluator();
     this.collectionExpression = collectionExpression;
     this.contents = contents;
     this.open = open;
@@ -52,7 +50,7 @@ public class ForEachSqlNode implements SqlNode {
   @Override
   public boolean apply(DynamicContext context) {
     Map<String, Object> bindings = context.getBindings();
-    final Iterable<?> iterable = evaluator.evaluateIterable(collectionExpression, bindings);
+    final Iterable<?> iterable = context.getExpressionEvaluator().evaluateIterable(collectionExpression, bindings);
     if (!iterable.iterator().hasNext()) {
       return true;
     }

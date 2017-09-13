@@ -82,6 +82,8 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.scripting.LanguageDriverRegistry;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
+import org.apache.ibatis.scripting.xmltags.ExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.OgnlExpressionLanguage;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.transaction.Transaction;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
@@ -130,6 +132,7 @@ public class Configuration {
   protected boolean lazyLoadingEnabled = false;
   protected ProxyFactory proxyFactory = new JavassistProxyFactory(); // #224 Using internal Javassist instead of OGNL
 
+  protected ExpressionLanguage expressionLanguage = new OgnlExpressionLanguage();
   protected String databaseId;
   /**
    * Configuration factory class.
@@ -507,6 +510,16 @@ public class Configuration {
 
   public void setObjectWrapperFactory(ObjectWrapperFactory objectWrapperFactory) {
     this.objectWrapperFactory = objectWrapperFactory;
+  }
+
+  public ExpressionLanguage getExpressionLanguage() {
+    return expressionLanguage;
+  }
+
+  public void setExpressionLanguage(ExpressionLanguage expressionLanguage) {
+    if (expressionLanguage != null) {
+      this.expressionLanguage = expressionLanguage;
+    }
   }
 
   /**

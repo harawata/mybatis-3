@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2015 the original author or authors.
+ *    Copyright 2009-2017 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,9 +27,15 @@ import org.apache.ibatis.builder.BuilderException;
  * @author Clinton Begin
  */
 public class ExpressionEvaluator {
+  private final ExpressionLanguage el;
+
+  public ExpressionEvaluator(ExpressionLanguage el) {
+    super();
+    this.el = el;
+  }
 
   public boolean evaluateBoolean(String expression, Object parameterObject) {
-    Object value = OgnlCache.getValue(expression, parameterObject);
+    Object value = el.getValue(expression, parameterObject);
     if (value instanceof Boolean) {
       return (Boolean) value;
     }
@@ -40,7 +46,7 @@ public class ExpressionEvaluator {
   }
 
   public Iterable<?> evaluateIterable(String expression, Object parameterObject) {
-    Object value = OgnlCache.getValue(expression, parameterObject);
+    Object value = el.getValue(expression, parameterObject);
     if (value == null) {
       throw new BuilderException("The expression '" + expression + "' evaluated to a null value.");
     }

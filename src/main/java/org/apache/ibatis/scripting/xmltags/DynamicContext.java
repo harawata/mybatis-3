@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2015 the original author or authors.
+ *    Copyright 2009-2017 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,10 +18,6 @@ package org.apache.ibatis.scripting.xmltags;
 import java.util.HashMap;
 import java.util.Map;
 
-import ognl.OgnlContext;
-import ognl.OgnlException;
-import ognl.OgnlRuntime;
-import ognl.PropertyAccessor;
 
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
@@ -34,12 +30,10 @@ public class DynamicContext {
   public static final String PARAMETER_OBJECT_KEY = "_parameter";
   public static final String DATABASE_ID_KEY = "_databaseId";
 
-  static {
-    OgnlRuntime.setPropertyAccessor(ContextMap.class, new ContextAccessor());
-  }
-
   private final ContextMap bindings;
   private final StringBuilder sqlBuilder = new StringBuilder();
+  private final ExpressionLanguage expressionLanguage;
+  private final ExpressionEvaluator expressionEvaluator;
   private int uniqueNumber = 0;
 
   public DynamicContext(Configuration configuration, Object parameterObject) {
@@ -51,6 +45,16 @@ public class DynamicContext {
     }
     bindings.put(PARAMETER_OBJECT_KEY, parameterObject);
     bindings.put(DATABASE_ID_KEY, configuration.getDatabaseId());
+    expressionLanguage = configuration.getExpressionLanguage();
+    expressionEvaluator = new ExpressionEvaluator(expressionLanguage);
+  }
+
+  public ExpressionLanguage getExpressionLanguage() {
+    return expressionLanguage;
+  }
+
+  public ExpressionEvaluator getExpressionEvaluator() {
+    return expressionEvaluator;
   }
 
   public Map<String, Object> getBindings() {
@@ -94,44 +98,6 @@ public class DynamicContext {
         return parameterMetaObject.getValue(strKey);
       }
 
-      return null;
-    }
-  }
-
-  static class ContextAccessor implements PropertyAccessor {
-
-    @Override
-    public Object getProperty(Map context, Object target, Object name)
-        throws OgnlException {
-      Map map = (Map) target;
-
-      Object result = map.get(name);
-      if (map.containsKey(name) || result != null) {
-        return result;
-      }
-
-      Object parameterObject = map.get(PARAMETER_OBJECT_KEY);
-      if (parameterObject instanceof Map) {
-        return ((Map)parameterObject).get(name);
-      }
-
-      return null;
-    }
-
-    @Override
-    public void setProperty(Map context, Object target, Object name, Object value)
-        throws OgnlException {
-      Map<Object, Object> map = (Map<Object, Object>) target;
-      map.put(name, value);
-    }
-
-    @Override
-    public String getSourceAccessor(OgnlContext arg0, Object arg1, Object arg2) {
-      return null;
-    }
-
-    @Override
-    public String getSourceSetter(OgnlContext arg0, Object arg1, Object arg2) {
       return null;
     }
   }

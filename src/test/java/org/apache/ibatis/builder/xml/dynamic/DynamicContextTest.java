@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2015 the original author or authors.
+ *    Copyright 2009-2017 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,19 +15,41 @@
  */
 package org.apache.ibatis.builder.xml.dynamic;
 
+import static com.googlecode.catchexception.apis.BDDCatchException.*;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.junit.Assert.*;
+
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 
+import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.domain.blog.Author;
 import org.apache.ibatis.domain.blog.Section;
 import org.apache.ibatis.scripting.xmltags.ExpressionEvaluator;
-
-import static org.junit.Assert.assertEquals;
-
+import org.apache.ibatis.scripting.xmltags.ExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.MvelExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.OgnlExpressionLanguage;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.mvel2.MVEL;
 
+@RunWith(Parameterized.class)
 public class ExpressionEvaluatorTest {
 
-  private ExpressionEvaluator evaluator = new ExpressionEvaluator();
+  @Parameters
+  public static Iterable<? extends Object> data() {
+    return Arrays.asList(new OgnlExpressionLanguage(), new MvelExpressionLanguage());
+  }
+
+  private final ExpressionEvaluator evaluator;
+
+  public ExpressionEvaluatorTest(ExpressionLanguage el) {
+    super();
+    this.evaluator = new ExpressionEvaluator(el);
+  }
 
   @Test
   public void shouldCompareStringsReturnTrue() {
@@ -66,6 +88,13 @@ public class ExpressionEvaluatorTest {
   }
 
   @Test
+  public void shouldNonExistentPropertyNameThrowException() {
+    when(evaluator).evaluateBoolean("idd", new Author(0, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    then(caughtException()).isInstanceOf(BuilderException.class)
+      .hasMessageStartingWith("Error evaluating expression");
+  }
+
+  @Test
   public void shouldIterateOverIterable() {
     final HashMap<String, String[]> parameterObject = new HashMap<String, String[]>() {{
       put("array", new String[]{"1", "2", "3"});
@@ -76,6 +105,4 @@ public class ExpressionEvaluatorTest {
       assertEquals(String.valueOf(++i), o);
     }
   }
-
-
 }

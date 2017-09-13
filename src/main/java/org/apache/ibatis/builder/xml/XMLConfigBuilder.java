@@ -38,6 +38,9 @@ import org.apache.ibatis.reflection.MetaClass;
 import org.apache.ibatis.reflection.ReflectorFactory;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
+import org.apache.ibatis.scripting.xmltags.ExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.MvelExpressionLanguage;
+import org.apache.ibatis.scripting.xmltags.OgnlExpressionLanguage;
 import org.apache.ibatis.session.AutoMappingBehavior;
 import org.apache.ibatis.session.AutoMappingUnknownColumnBehavior;
 import org.apache.ibatis.session.Configuration;
@@ -266,6 +269,15 @@ public class XMLConfigBuilder extends BaseBuilder {
     Class<? extends Log> logImpl = (Class<? extends Log>)resolveClass(props.getProperty("logImpl"));
     configuration.setLogImpl(logImpl);
     configuration.setConfigurationFactory(resolveClass(props.getProperty("configurationFactory")));
+    // Expession language
+    final String el = props.getProperty("expressionLanguage");
+    if ("MVEL".equalsIgnoreCase(el)) {
+      configuration.setExpressionLanguage(new MvelExpressionLanguage());
+    } else if ("OGNL".equalsIgnoreCase(el)) {
+      configuration.setExpressionLanguage(new OgnlExpressionLanguage());
+    } else if (el != null) {
+      configuration.setExpressionLanguage((ExpressionLanguage) createInstance(el));
+    }
   }
 
   private void environmentsElement(XNode context) throws Exception {
