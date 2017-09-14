@@ -19,87 +19,107 @@ import static com.googlecode.catchexception.apis.BDDCatchException.*;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.junit.Assert.*;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.domain.blog.Author;
 import org.apache.ibatis.domain.blog.Section;
-import org.apache.ibatis.scripting.xmltags.ExpressionEvaluator;
-import org.apache.ibatis.scripting.xmltags.ExpressionLanguage;
+import org.apache.ibatis.reflection.ReflectionException;
+import org.apache.ibatis.scripting.xmltags.DynamicContext;
 import org.apache.ibatis.scripting.xmltags.MvelExpressionLanguage;
 import org.apache.ibatis.scripting.xmltags.OgnlExpressionLanguage;
+import org.apache.ibatis.session.Configuration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.mvel2.MVEL;
 
 @RunWith(Parameterized.class)
-public class ExpressionEvaluatorTest {
+public class DynamicContextTest {
 
   @Parameters
   public static Iterable<? extends Object> data() {
-    return Arrays.asList(new OgnlExpressionLanguage(), new MvelExpressionLanguage());
+    Configuration confOgnl = new Configuration();
+    confOgnl.setExpressionLanguage(new OgnlExpressionLanguage());
+    Configuration confMvel = new Configuration();
+    confMvel.setExpressionLanguage(new MvelExpressionLanguage());
+    return Arrays.asList(confOgnl, confMvel);
   }
 
-  private final ExpressionEvaluator evaluator;
+  private final Configuration config;
 
-  public ExpressionEvaluatorTest(ExpressionLanguage el) {
+  public DynamicContextTest(Configuration config) {
     super();
-    this.evaluator = new ExpressionEvaluator(el);
+    this.config = config;
   }
 
   @Test
   public void shouldCompareStringsReturnTrue() {
-    boolean value = evaluator.evaluateBoolean("username == 'cbegin'", new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("username == 'cbegin'");
     assertEquals(true, value);
   }
 
   @Test
   public void shouldCompareStringsReturnFalse() {
-    boolean value = evaluator.evaluateBoolean("username == 'norm'", new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("username == 'norm'");
     assertEquals(false, value);
   }
 
   @Test
   public void shouldReturnTrueIfNotNull() {
-    boolean value = evaluator.evaluateBoolean("username", new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(1, "cbegin", "******", "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("username");
     assertEquals(true, value);
   }
 
   @Test
   public void shouldReturnFalseIfNull() {
-    boolean value = evaluator.evaluateBoolean("password", new Author(1, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(1, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("password");
     assertEquals(false, value);
   }
 
   @Test
   public void shouldReturnTrueIfNotZero() {
-    boolean value = evaluator.evaluateBoolean("id", new Author(1, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(1, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("id");
     assertEquals(true, value);
   }
 
   @Test
   public void shouldReturnFalseIfZero() {
-    boolean value = evaluator.evaluateBoolean("id", new Author(0, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(0, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    boolean value = dynamicContext.evaluateBoolean("id");
     assertEquals(false, value);
   }
 
   @Test
   public void shouldNonExistentPropertyNameThrowException() {
-    when(evaluator).evaluateBoolean("idd", new Author(0, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
-    then(caughtException()).isInstanceOf(BuilderException.class)
-      .hasMessageStartingWith("Error evaluating expression");
+    DynamicContext dynamicContext = new DynamicContext(config,
+        new Author(0, "cbegin", null, "cbegin@apache.org", "N/A", Section.NEWS));
+    when(dynamicContext).evaluateBoolean("idd");
+    then(caughtException()).isInstanceOfAny(BuilderException.class, ReflectionException.class);
   }
 
   @Test
   public void shouldIterateOverIterable() {
-    final HashMap<String, String[]> parameterObject = new HashMap<String, String[]>() {{
-      put("array", new String[]{"1", "2", "3"});
-    }};
-    final Iterable<?> iterable = evaluator.evaluateIterable("array", parameterObject);
+    @SuppressWarnings("serial")
+    final HashMap<String, String[]> parameterObject = new HashMap<String, String[]>() {
+      {
+        put("array", new String[] { "1", "2", "3" });
+      }
+    };
+    DynamicContext dynamicContext = new DynamicContext(config, parameterObject);
+    final Iterable<?> iterable = dynamicContext.evaluateIterable("array");
     int i = 0;
     for (Object o : iterable) {
       assertEquals(String.valueOf(++i), o);

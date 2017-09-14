@@ -49,8 +49,7 @@ public class ForEachSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
-    Map<String, Object> bindings = context.getBindings();
-    final Iterable<?> iterable = context.getExpressionEvaluator().evaluateIterable(collectionExpression, bindings);
+    final Iterable<?> iterable = context.evaluateIterable(collectionExpression);
     if (!iterable.iterator().hasNext()) {
       return true;
     }

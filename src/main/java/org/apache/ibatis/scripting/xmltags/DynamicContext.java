@@ -15,10 +15,14 @@
  */
 package org.apache.ibatis.scripting.xmltags;
 
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-
+import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 
@@ -33,7 +37,6 @@ public class DynamicContext {
   private final ContextMap bindings;
   private final StringBuilder sqlBuilder = new StringBuilder();
   private final ExpressionLanguage expressionLanguage;
-  private final ExpressionEvaluator expressionEvaluator;
   private int uniqueNumber = 0;
 
   public DynamicContext(Configuration configuration, Object parameterObject) {
@@ -46,15 +49,48 @@ public class DynamicContext {
     bindings.put(PARAMETER_OBJECT_KEY, parameterObject);
     bindings.put(DATABASE_ID_KEY, configuration.getDatabaseId());
     expressionLanguage = configuration.getExpressionLanguage();
-    expressionEvaluator = new ExpressionEvaluator(expressionLanguage);
   }
 
-  public ExpressionLanguage getExpressionLanguage() {
-    return expressionLanguage;
+  public Object getValue(String expression) {
+    return expressionLanguage.getValue(expression, getBindings());
   }
 
-  public ExpressionEvaluator getExpressionEvaluator() {
-    return expressionEvaluator;
+  public boolean evaluateBoolean(String expression) {
+    Object value = expressionLanguage.getValue(expression, getBindings());
+    if (value instanceof Boolean) {
+      return (Boolean) value;
+    }
+    if (value instanceof Number) {
+      return !new BigDecimal(String.valueOf(value)).equals(BigDecimal.ZERO);
+    }
+    return value != null;
+  }
+
+  public Iterable<?> evaluateIterable(String expression) {
+    Object value = expressionLanguage.getValue(expression, getBindings());
+    if (value == null) {
+      throw new BuilderException("The expression '" + expression + "' evaluated to a null value.");
+    }
+    if (value instanceof Iterable) {
+      return (Iterable<?>) value;
+    }
+    if (value.getClass().isArray()) {
+      // the array may be primitive, so Arrays.asList() may throw
+      // a ClassCastException (issue 209). Do the work manually
+      // Curse primitives! :) (JGB)
+      int size = Array.getLength(value);
+      List<Object> answer = new ArrayList<Object>();
+      for (int i = 0; i < size; i++) {
+        Object o = Array.get(value, i);
+        answer.add(o);
+      }
+      return answer;
+    }
+    if (value instanceof Map) {
+      return ((Map<?, ?>) value).entrySet();
+    }
+    throw new BuilderException(
+        "Error evaluating expression '" + expression + "'.  Return value (" + value + ") was not iterable.");
   }
 
   public Map<String, Object> getBindings() {
