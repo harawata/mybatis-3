@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2016 the original author or authors.
+ *    Copyright 2009-2017 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,10 +16,30 @@
 package org.apache.ibatis.submitted.keygen;
 
 import java.util.List;
+import java.util.Set;
+
+import org.apache.ibatis.annotations.Param;
 
 public interface CountryMapper {
 
   int insertList(List<Country> countries);
+
+  int insertNamedList(@Param("countries") List<Country> countries);
+
+  int insertSet(Set<Country> countries);
+
+  int insertNamedSet(@Param("countries") Set<Country> countries);
+
+  int insertArray(Country[] countries);
+
+  int insertNamedArray(@Param("countries") Country[] countries);
+
+  int insertCountryAndSomeId(@Param("country") Country country, @Param("someId") Integer someId);
+
+  int insertListAndSomeId(@Param("list") List<Country> countries, @Param("someId") Integer someId);
+
+  int insertNamedListAndSomeId(@Param("countries") List<Country> countries, @Param("someId") Integer someId);
+
   int insertUndefineKeyProperty(Country country);
 
 }
