@@ -69,11 +69,33 @@
     values
     (#{country.countryname},#{country.countrycode})
   </insert>
+  <insert id="insertCountryAndSomeList" useGeneratedKeys="true"
+    keyProperty="country.id">
+    insert into country (countryname,countrycode)
+    values
+    (#{country.countryname},#{country.countrycode})
+  </insert>
   <insert id="insertListAndSomeId" useGeneratedKeys="true"
     keyProperty="id">
     insert into country (countryname,countrycode)
     values
     <foreach collection="list" separator="," item="country">
+      (#{country.countryname},#{country.countrycode})
+    </foreach>
+  </insert>
+  <insert id="insertSetAndSomeId" useGeneratedKeys="true"
+    keyProperty="id">
+    insert into country (countryname,countrycode)
+    values
+    <foreach collection="collection" separator="," item="country">
+      (#{country.countryname},#{country.countrycode})
+    </foreach>
+  </insert>
+  <insert id="insertArrayAndSomeId" useGeneratedKeys="true"
+    keyProperty="id">
+    insert into country (countryname,countrycode)
+    values
+    <foreach collection="array" separator="," item="country">
       (#{country.countryname},#{country.countrycode})
     </foreach>
   </insert>

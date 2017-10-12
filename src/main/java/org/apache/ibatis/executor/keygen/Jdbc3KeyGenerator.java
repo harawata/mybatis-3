@@ -19,18 +19,19 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.ibatis.binding.BindingException;
+import org.apache.ibatis.binding.MapperMethod.ParamMap;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.ExecutorException;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.defaults.DefaultSqlSession.StrictMap;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
@@ -57,7 +58,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
     processBatch(ms, stmt, getParameters(parameter));
   }
 
-  public void processBatch(MappedStatement ms, Statement stmt, Collection<Object> parameters) {
+  public void processBatch(MappedStatement ms, Statement stmt, Collection<?> parameters) {
     ResultSet rs = null;
     try {
       rs = stmt.getGeneratedKeys();
@@ -92,25 +93,50 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
     }
   }
 
-  private Collection<Object> getParameters(Object parameter) {
-    Collection<Object> parameters = null;
-    if (parameter instanceof Collection) {
-      parameters = (Collection) parameter;
-    } else if (parameter instanceof Map) {
-      Map parameterMap = (Map) parameter;
-      if (parameterMap.containsKey("collection")) {
-        parameters = (Collection) parameterMap.get("collection");
-      } else if (parameterMap.containsKey("list")) {
-        parameters = (List) parameterMap.get("list");
-      } else if (parameterMap.containsKey("array")) {
-        parameters = Arrays.asList((Object[]) parameterMap.get("array"));
+  private Collection<?> getParameters(Object parameter) {
+    if (parameter instanceof ParamMap || parameter instanceof StrictMap) {
+      final Map<?, ?> paramMap = (Map<?, ?>) parameter;
+      Object soleParam = null;
+      for (Object paramValue : paramMap.values()) {
+        if (soleParam == paramValue) {
+          continue;
+        } else if (soleParam != null) {
+          soleParam = null;
+          break;
+        }
+        soleParam = paramValue;
+      }
+      if (soleParam != null) {
+        if (soleParam instanceof Collection) {
+          return (Collection<?>)soleParam;
+        } else if (soleParam instanceof Object[]){
+          return Arrays.asList((Object[])soleParam);
+        } else {
+          return Arrays.asList(soleParam);
+        }
+      }
+      // There are multiple parameters.
+      // Look for a parameter with special name.
+      if (paramMap.containsKey("collection")) {
+        Object param = paramMap.get("collection");
+        if (param != null && param instanceof Collection) {
+          return (Collection<?>) param;
+        }
+      }
+      if (paramMap.containsKey("list")) {
+        Object param = paramMap.get("list");
+        if (param != null && param instanceof List) {
+          return (Collection<?>) param;
+        }
+      }
+      if (paramMap.containsKey("array")) {
+        Object param = paramMap.get("array");
+        if (param != null && param instanceof Object[]) {
+          return Arrays.asList((Object[])param);
+        }
       }
     }
-    if (parameters == null) {
-      parameters = new ArrayList<Object>();
-      parameters.add(parameter);
-    }
-    return parameters;
+    return Arrays.asList(parameter);
   }
 
   private TypeHandler<?>[] getTypeHandlers(TypeHandlerRegistry typeHandlerRegistry, MetaObject metaParam, String[] keyProperties, ResultSetMetaData rsmd) throws SQLException {

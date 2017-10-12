@@ -36,7 +36,13 @@ public interface CountryMapper {
 
   int insertCountryAndSomeId(@Param("country") Country country, @Param("someId") Integer someId);
 
+  int insertCountryAndSomeList(@Param("country") Country country, @Param("list") List<Integer> someList);
+
   int insertListAndSomeId(@Param("list") List<Country> countries, @Param("someId") Integer someId);
+
+  int insertSetAndSomeId(@Param("collection") Set<Country> countries, @Param("someId") Integer someId);
+
+  int insertArrayAndSomeId(@Param("array") Country[] countries, @Param("someId") Integer someId);
 
   int insertNamedListAndSomeId(@Param("countries") List<Country> countries, @Param("someId") Integer someId);
 

@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 import java.io.Reader;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -186,6 +187,22 @@ public class Jdbc3KeyGeneratorTest {
     }
   }
 
+  @Ignore("This case worked in 3.3.0, but was broken by #547. "
+      + "No one knew it worked, probably.")
+  @Test
+  public void shouldSetGeneratedIdOnObject_MultiParamsWithList() throws Exception {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      CountryMapper mapper = sqlSession.getMapper(CountryMapper.class);
+      Country country = new Country("China", "CN");
+      mapper.insertCountryAndSomeList(country, Arrays.asList(1, 2, 3));
+      assertNotNull(country.getId());
+    } finally {
+      sqlSession.rollback();
+      sqlSession.close();
+    }
+  }
+
   @Test
   public void shouldSetGeneratedIdsOnList_MultiParams() throws Exception {
     SqlSession sqlSession = sqlSessionFactory.openSession();
@@ -195,6 +212,42 @@ public class Jdbc3KeyGeneratorTest {
       countries.add(new Country("China", "CN"));
       countries.add(new Country("United Kiongdom", "GB"));
       mapper.insertListAndSomeId(countries, Integer.valueOf(1));
+      for (Country country : countries) {
+        assertNotNull(country.getId());
+      }
+    } finally {
+      sqlSession.rollback();
+      sqlSession.close();
+    }
+  }
+
+  @Test
+  public void shouldSetGeneratedIdsOnCollection_MultiParams() throws Exception {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      CountryMapper mapper = sqlSession.getMapper(CountryMapper.class);
+      Set<Country> countries = new HashSet<Country>();
+      countries.add(new Country("China", "CN"));
+      countries.add(new Country("United Kiongdom", "GB"));
+      mapper.insertSetAndSomeId(countries, Integer.valueOf(1));
+      for (Country country : countries) {
+        assertNotNull(country.getId());
+      }
+    } finally {
+      sqlSession.rollback();
+      sqlSession.close();
+    }
+  }
+
+  @Test
+  public void shouldSetGeneratedIdsOnArray_MultiParams() throws Exception {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      CountryMapper mapper = sqlSession.getMapper(CountryMapper.class);
+      Country[] countries = new Country[2];
+      countries[0] = new Country("China", "CN");
+      countries[1] = new Country("United Kiongdom", "GB");
+      mapper.insertArrayAndSomeId(countries, Integer.valueOf(1));
       for (Country country : countries) {
         assertNotNull(country.getId());
       }
