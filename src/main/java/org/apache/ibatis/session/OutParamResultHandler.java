@@ -13,18 +13,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.apache.ibatis.submitted.usesjava8.refcursor;
 
-import java.util.Map;
+package org.apache.ibatis.session;
 
-import org.apache.ibatis.session.ResultHandler;
+public interface OutParamResultHandler<T> extends ResultHandler<T> {
 
-public interface OrdersMapper {
-  void getOrder1(Map<String, Object> parameter);
+  boolean canHandleParamAt(int paramIndex);
 
-  void getOrder2(Map<String, Object> parameter);
-
-  void getOrder3(Map<String, Object> parameter, ResultHandler<Order> resultHandler);
-
-  void getOrder4(Map<String, Object> parameter, ResultHandler<?> resultHandler);
 }

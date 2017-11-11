@@ -32,6 +32,7 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.jdbc.ScriptRunner;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.OutParamResultHandler;
 import org.apache.ibatis.session.ResultContext;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.SqlSession;
@@ -144,6 +145,52 @@ public class RefCursorTest {
       assertNull(parameter.get("order"));
       assertEquals(Integer.valueOf(3), parameter.get("detailCount"));
       assertEquals("Anonymous", handler.getResult().get(0).getCustomerName());
+    }
+  }
+
+  @Test
+  public void shouldUseResultHandlerOnSpecifiedOutParams() throws IOException {
+    class HeaderDetailResultHandler implements OutParamResultHandler<Object> {
+      private List<Order> headers = new ArrayList<Order>();
+      private List<OrderDetail> details = new ArrayList<OrderDetail>();
+      private int paramIndex;
+
+      @Override
+      public void handleResult(ResultContext<? extends Object> resultContext) {
+        if (paramIndex == 2) {
+          Order order = (Order) resultContext.getResultObject();
+          order.setCustomerName("Anonymous");
+          headers.add(order);
+        } else if (paramIndex == 3) {
+          OrderDetail detail = (OrderDetail) resultContext.getResultObject();
+          detail.setDescription("Secret");
+          details.add(detail);
+        }
+      }
+
+      @Override
+      public boolean canHandleParamAt(int paramIndex) {
+        this.paramIndex = paramIndex;
+        return paramIndex == 2 || paramIndex == 3;
+      }
+    }
+
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      OrdersMapper mapper = sqlSession.getMapper(OrdersMapper.class);
+      HeaderDetailResultHandler handler = new HeaderDetailResultHandler();
+      Map<String, Object> parameter = new HashMap<String, Object>();
+      parameter.put("orderId", 1);
+      mapper.getOrder4(parameter, handler);
+
+      assertNull(parameter.get("orderHeader"));
+      assertNull(parameter.get("orderDetails"));
+      assertEquals(Integer.valueOf(3), parameter.get("detailCount"));
+      assertEquals("Anonymous", handler.headers.get(0).getCustomerName());
+      assertEquals("Secret", handler.details.get(0).getDescription());
+      // The handler shouldn't be applied to the last parameter.
+      @SuppressWarnings("unchecked")
+      List<Order> anotherHeader = (List<Order>) parameter.get("anotherHeader");
+      assertEquals("Fred", anotherHeader.get(0).getCustomerName());
     }
   }
 }

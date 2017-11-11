@@ -45,6 +45,7 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultContext;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
+import org.apache.ibatis.session.OutParamResultHandler;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
@@ -146,7 +147,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       final ParameterMapping parameterMapping = parameterMappings.get(i);
       if (parameterMapping.getMode() == ParameterMode.OUT || parameterMapping.getMode() == ParameterMode.INOUT) {
         if (ResultSet.class.equals(parameterMapping.getJavaType())) {
-          handleRefCursorOutputParameter((ResultSet) cs.getObject(i + 1), parameterMapping, metaParam);
+          handleRefCursorOutputParameter((ResultSet) cs.getObject(i + 1), parameterMapping, metaParam, i);
         } else {
           final TypeHandler<?> typeHandler = parameterMapping.getTypeHandler();
           metaParam.setValue(parameterMapping.getProperty(), typeHandler.getResult(cs, i + 1));
@@ -155,7 +156,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     }
   }
 
-  private void handleRefCursorOutputParameter(ResultSet rs, ParameterMapping parameterMapping, MetaObject metaParam) throws SQLException {
+  private void handleRefCursorOutputParameter(ResultSet rs, ParameterMapping parameterMapping, MetaObject metaParam, int paramIndex) throws SQLException {
     if (rs == null) {
       return;
     }
@@ -163,7 +164,8 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       final String resultMapId = parameterMapping.getResultMapId();
       final ResultMap resultMap = configuration.getResultMap(resultMapId);
       final ResultSetWrapper rsw = new ResultSetWrapper(rs, configuration);
-      if (this.resultHandler == null) {
+      if (resultHandler == null || (resultHandler instanceof OutParamResultHandler
+          && !((OutParamResultHandler<?>) resultHandler).canHandleParamAt(paramIndex))) {
         final DefaultResultHandler resultHandler = new DefaultResultHandler(objectFactory);
         handleRowValues(rsw, resultMap, resultHandler, new RowBounds(), null);
         metaParam.setValue(parameterMapping.getProperty(), resultHandler.getResultList());
