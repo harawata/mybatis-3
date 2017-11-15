@@ -13,16 +13,26 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.apache.ibatis.submitted.usesjava8.refcursor;
+package org.apache.ibatis.submitted.hashmaptypehandler;
 
-import java.util.Map;
+public class User {
 
-import org.apache.ibatis.session.ResultHandler;
+  private Integer id;
+  private String name;
 
-public interface OrdersMapper {
-  void getOrder1(Map<String, Object> parameter);
+  public Integer getId() {
+    return id;
+  }
 
-  void getOrder2(Map<String, Object> parameter);
+  public void setId(Integer id) {
+    this.id = id;
+  }
 
-  void getOrder3(Map<String, Object> parameter, ResultHandler<Order> resultHandler);
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
 }

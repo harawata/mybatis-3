@@ -351,6 +351,7 @@ Set
 你可以使用 ResultHandler 做很多漂亮的事,
 那就是 MyBatis 内部创建结果集列表。
   </p>
+  <p>Since 3.4.6, ResultHandler passed to a CALLABLE statement is used on every REFCURSOR output parameter of the stored procedure if there is any.</p>
   <p>它的接口很简单。</p>  
   <source><![CDATA[package org.apache.ibatis.session;
 public interface ResultHandler<T> {
@@ -363,6 +364,13 @@ public interface ResultHandler<T> {
 你可以使用布
 尔返回值的 stop()方法来停止 MyBatis 加载更多的结果。
   </p>
+
+  <p>Using a ResultHandler has two limitations that you should be aware of:</p>
+  
+  <ul>
+  <li>Data got from an method called with a ResultHandler will not be cached.</li>
+  <li>When using advanced resultmaps MyBatis will probably require several rows to build an object. If a ResultHandler is used you may be given an object whose associations or collections are not yet filled.</li>
+  </ul>
 
   <h5>批量立即更新方法(Flush Method)</h5>
   <p>有一个方法可以刷新（执行）存储在JDBC驱动类中的批量更新语句。当你将<code>ExecutorType.BATCH</code>作为<code>ExecutorType</code>使用时可以采用此方法。</p>
@@ -747,7 +755,7 @@ resultSets=””。
 这些可选的 SQL 注解允许你指定一个
 类名和一个方法在执行时来返回运行
 允许创建动态 
-的 SQL。
+的 SQL (Since 3.4.6, you can specify the <code>CharSequence</code> instead of <code>String</code> as a method return type)。
 基于执行的映射语句, 
 MyBatis
 会实例化这个类,然后执行由 provider
@@ -860,7 +868,7 @@ Company getCompanyById(Integer id);</source>
 List<User> getUsersByName(String name);
 
 class UserSqlBuilder {
-  public String buildGetUsersByName(final String name) {
+  public static String buildGetUsersByName(final String name) {
     return new SQL(){{
       SELECT("*");
       FROM("users");
@@ -880,7 +888,7 @@ List<User> getUsersByName(
 class UserSqlBuilder {
 
   // If not use @Param, you should be define same arguments with mapper method
-  public String buildGetUsersByName(
+  public static String buildGetUsersByName(
       final String name, final String orderByColumn) {
     return new SQL(){{
       SELECT("*");
@@ -891,7 +899,7 @@ class UserSqlBuilder {
   }
 
   // If use @Param, you can define only arguments to be used
-  public String buildGetUsersByName(@Param("orderByColumn") final String orderByColumn) {
+  public static String buildGetUsersByName(@Param("orderByColumn") final String orderByColumn) {
     return new SQL(){{
       SELECT("*");
       FROM("users");

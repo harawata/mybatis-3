@@ -20,6 +20,7 @@ import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
+import org.apache.ibatis.mapping.StatementType;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.ParamNameResolver;
 import org.apache.ibatis.reflection.TypeParameterResolver;
@@ -53,7 +54,7 @@ public class MapperMethod {
     Object result;
     switch (command.getType()) {
       case INSERT: {
-    	Object param = method.convertArgsToSqlCommandParam(args);
+      Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
@@ -113,9 +114,10 @@ public class MapperMethod {
 
   private void executeWithResultHandler(SqlSession sqlSession, Object[] args) {
     MappedStatement ms = sqlSession.getConfiguration().getMappedStatement(command.getName());
-    if (void.class.equals(ms.getResultMaps().get(0).getType())) {
-      throw new BindingException("method " + command.getName() 
-          + " needs either a @ResultMap annotation, a @ResultType annotation," 
+    if (!StatementType.CALLABLE.equals(ms.getStatementType())
+        && void.class.equals(ms.getResultMaps().get(0).getType())) {
+      throw new BindingException("method " + command.getName()
+          + " needs either a @ResultMap annotation, a @ResultType annotation,"
           + " or a resultType attribute in XML so a ResultHandler can be used as a parameter.");
     }
     Object param = method.convertArgsToSqlCommandParam(args);
@@ -284,10 +286,10 @@ public class MapperMethod {
         this.returnType = method.getReturnType();
       }
       this.returnsVoid = void.class.equals(this.returnType);
-      this.returnsMany = (configuration.getObjectFactory().isCollection(this.returnType) || this.returnType.isArray());
+      this.returnsMany = configuration.getObjectFactory().isCollection(this.returnType) || this.returnType.isArray();
       this.returnsCursor = Cursor.class.equals(this.returnType);
       this.mapKey = getMapKey(method);
-      this.returnsMap = (this.mapKey != null);
+      this.returnsMap = this.mapKey != null;
       this.rowBoundsIndex = getUniqueParamIndex(method, RowBounds.class);
       this.resultHandlerIndex = getUniqueParamIndex(method, ResultHandler.class);
       this.paramNameResolver = new ParamNameResolver(configuration, method);

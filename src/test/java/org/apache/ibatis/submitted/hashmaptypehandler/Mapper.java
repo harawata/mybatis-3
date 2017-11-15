@@ -13,16 +13,23 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.apache.ibatis.submitted.usesjava8.refcursor;
+package org.apache.ibatis.submitted.hashmaptypehandler;
 
-import java.util.Map;
+import java.util.HashMap;
 
-import org.apache.ibatis.session.ResultHandler;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-public interface OrdersMapper {
-  void getOrder1(Map<String, Object> parameter);
+public interface Mapper {
 
-  void getOrder2(Map<String, Object> parameter);
+  @Select("select * from users where id = #{id} and name = #{name}")
+  User getUser(@Param("id") Integer id, @Param("name") String name);
 
-  void getOrder3(Map<String, Object> parameter, ResultHandler<Order> resultHandler);
+  User getUserXml(@Param("id") Integer id, @Param("name") String name);
+
+  @Select("select * from users where name = #{map}")
+  User getUserWithTypeHandler(HashMap<String, String> map);
+
+  User getUserWithTypeHandlerXml(HashMap<String, String> map);
+
 }
