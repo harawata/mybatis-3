@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.apache.ibatis.builder;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.mapping.StatementType;
 import org.apache.ibatis.reflection.MetaClass;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
@@ -175,7 +177,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
   public ResultMap addResultMap(
       String id,
-      Class<?> type,
+      Type type,
       String extend,
       Discriminator discriminator,
       List<ResultMapping> resultMappings,
@@ -216,7 +218,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
   }
 
   public Discriminator buildDiscriminator(
-      Class<?> resultType,
+      Type resultType,
       String column,
       Class<?> javaType,
       JdbcType jdbcType,
@@ -256,7 +258,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String parameterMap,
       Class<?> parameterType,
       String resultMap,
-      Class<?> resultType,
+      Type resultType,
       ResultSetType resultSetType,
       boolean flushCache,
       boolean useCache,
@@ -332,7 +334,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
   private List<ResultMap> getStatementResultMaps(
       String resultMap,
-      Class<?> resultType,
+      Type resultType,
       String statementId) {
     resultMap = applyCurrentNamespace(resultMap, true);
 
@@ -359,7 +361,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
   }
 
   public ResultMapping buildResultMapping(
-      Class<?> resultType,
+      Type resultType,
       String property,
       String column,
       Class<?> javaType,
@@ -422,10 +424,16 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return composites;
   }
 
-  private Class<?> resolveResultJavaType(Class<?> resultType, String property, Class<?> javaType) {
+  private Class<?> resolveResultJavaType(Type resultType, String property, Class<?> javaType) {
     if (javaType == null && property != null) {
       try {
-        MetaClass metaResultType = MetaClass.forClass(resultType, configuration.getReflectorFactory());
+        Class<?> resultClass;
+        if (OptionalUtil.isOptional(resultType)) {
+          resultClass = OptionalUtil.extractArgument(resultType);
+        } else {
+          resultClass = (Class<?>) resultType;
+        }
+        MetaClass metaResultType = MetaClass.forClass(resultClass, configuration.getReflectorFactory());
         javaType = metaResultType.getSetterType(property);
       } catch (Exception e) {
         //ignore, following null check statement will deal with the situation

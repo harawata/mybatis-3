@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -78,6 +78,12 @@ public class CustomObjectWrapper implements org.apache.ibatis.reflection.wrapper
 
   @Override
   public boolean hasGetter(String name) {
+    // Not implemented
+    return false;
+  }
+
+  @Override
+  public boolean isSetterTypeOptional(String name) {
     // Not Implemented
     return false;
   }

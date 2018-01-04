@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -167,6 +167,16 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
   }
 
   @Override
+  public <T> T selectOptional(String statement) {
+    return sqlSessionProxy.<T> selectOptional(statement);
+  }
+  
+  @Override
+  public <T> T selectOptional(String statement, Object parameter) {
+    return sqlSessionProxy.<T> selectOptional(statement, parameter);
+  }
+
+  @Override
   public <K, V> Map<K, V> selectMap(String statement, String mapKey) {
     return sqlSessionProxy.<K, V> selectMap(statement, mapKey);
   }
@@ -209,6 +219,21 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
     return sqlSessionProxy.<E> selectList(statement, parameter, rowBounds);
+  }
+
+  @Override
+  public <E> List<E> selectOptionalList(String statement) {
+    return sqlSessionProxy.<E> selectOptionalList(statement);
+  }
+  
+  @Override
+  public <E> List<E> selectOptionalList(String statement, Object parameter) {
+    return sqlSessionProxy.<E> selectOptionalList(statement, parameter);
+  }
+  
+  @Override
+  public <E> List<E> selectOptionalList(String statement, Object parameter, RowBounds rowBounds) {
+    return sqlSessionProxy.<E> selectOptionalList(statement, parameter, rowBounds);
   }
 
   @Override

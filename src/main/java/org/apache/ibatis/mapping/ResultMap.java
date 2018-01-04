@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.apache.ibatis.mapping;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,6 +31,7 @@ import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.reflection.Jdk;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
 
@@ -40,7 +42,8 @@ public class ResultMap {
   private Configuration configuration;
 
   private String id;
-  private Class<?> type;
+  private Type resultType;
+  private Class<?> resultClass;
   private List<ResultMapping> resultMappings;
   private List<ResultMapping> idResultMappings;
   private List<ResultMapping> constructorResultMappings;
@@ -60,14 +63,14 @@ public class ResultMap {
 
     private ResultMap resultMap = new ResultMap();
 
-    public Builder(Configuration configuration, String id, Class<?> type, List<ResultMapping> resultMappings) {
-      this(configuration, id, type, resultMappings, null);
+    public Builder(Configuration configuration, String id, Type resultType, List<ResultMapping> resultMappings) {
+      this(configuration, id, resultType, resultMappings, null);
     }
 
-    public Builder(Configuration configuration, String id, Class<?> type, List<ResultMapping> resultMappings, Boolean autoMapping) {
+    public Builder(Configuration configuration, String id, Type resultType, List<ResultMapping> resultMappings, Boolean autoMapping) {
       resultMap.configuration = configuration;
       resultMap.id = id;
-      resultMap.type = type;
+      resultMap.resultType = resultType;
       resultMap.resultMappings = resultMappings;
       resultMap.autoMapping = autoMapping;
     }
@@ -75,10 +78,6 @@ public class ResultMap {
     public Builder discriminator(Discriminator discriminator) {
       resultMap.discriminator = discriminator;
       return this;
-    }
-
-    public Class<?> type() {
-      return resultMap.type;
     }
 
     public ResultMap build() {
@@ -91,6 +90,13 @@ public class ResultMap {
       resultMap.constructorResultMappings = new ArrayList<ResultMapping>();
       resultMap.propertyResultMappings = new ArrayList<ResultMapping>();
       final List<String> constructorArgNames = new ArrayList<String>();
+      Type type = resultMap.resultType;
+      if (OptionalUtil.isOptional(type)) {
+        resultMap.resultClass = OptionalUtil.extractArgument(type);
+      } else {
+        // only non-class type is Optional
+        resultMap.resultClass = (Class<?>) type;
+      }
       for (ResultMapping resultMapping : resultMap.resultMappings) {
         resultMap.hasNestedQueries = resultMap.hasNestedQueries || resultMapping.getNestedQueryId() != null;
         resultMap.hasNestedResultMaps = resultMap.hasNestedResultMaps || (resultMapping.getNestedResultMapId() != null && resultMapping.getResultSet() == null);
@@ -151,7 +157,7 @@ public class ResultMap {
     }
 
     private List<String> argNamesOfMatchingConstructor(List<String> constructorArgNames) {
-      Constructor<?>[] constructors = resultMap.type.getDeclaredConstructors();
+      Constructor<?>[] constructors = resultMap.resultClass.getDeclaredConstructors();
       for (Constructor<?> constructor : constructors) {
         Class<?>[] paramTypes = constructor.getParameterTypes();
         if (constructorArgNames.size() == paramTypes.length) {
@@ -224,7 +230,7 @@ public class ResultMap {
   }
 
   public Class<?> getType() {
-    return type;
+    return resultClass;
   }
 
   public List<ResultMapping> getResultMappings() {

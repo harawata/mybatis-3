@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
@@ -130,6 +131,25 @@ public class MapWrapper extends BaseWrapper {
       }
     } else {
       return map.containsKey(prop.getName());
+    }
+  }
+
+  @Override
+  public boolean isSetterTypeOptional(String name) {
+    PropertyTokenizer prop = new PropertyTokenizer(name);
+    if (prop.hasNext()) {
+      MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
+      if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
+        return false;
+      } else {
+        return metaValue.isSetterTypeOptional(prop.getChildren());
+      }
+    } else {
+      if (map.get(name) != null) {
+        return OptionalUtil.isOptional(map.get(name).getClass());
+      } else {
+        return false;
+      }
     }
   }
 

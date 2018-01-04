@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.result.DefaultMapResultHandler;
 import org.apache.ibatis.executor.result.DefaultResultContext;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
@@ -81,6 +82,24 @@ public class DefaultSqlSession implements SqlSession {
       throw new TooManyResultsException("Expected one result (or null) to be returned by selectOne(), but found: " + list.size());
     } else {
       return null;
+    }
+  }
+
+  @Override
+  public <T> T selectOptional(String statement) {
+    return this.<T>selectOptional(statement, null);
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> T selectOptional(String statement, Object parameter) {
+    List<T> list = this.<T>selectList(statement, parameter);
+    if (list.isEmpty()) {
+      return (T) OptionalUtil.empty();
+    } else if (list.size() == 1) {
+      return (T) OptionalUtil.ofNullable(list.get(0));
+    } else {
+      throw new TooManyResultsException("Expected one result (or null) to be returned by selectOptional(), but found: " + list.size());
     }
   }
 
@@ -146,6 +165,33 @@ public class DefaultSqlSession implements SqlSession {
     try {
       MappedStatement ms = configuration.getMappedStatement(statement);
       return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
+    } catch (Exception e) {
+      throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
+    } finally {
+      ErrorContext.instance().reset();
+    }
+  }
+
+  @Override
+  public <E> List<E> selectOptionalList(String statement) {
+    return this.selectOptionalList(statement, null);
+  }
+
+  @Override
+  public <E> List<E> selectOptionalList(String statement, Object parameter) {
+    return this.selectOptionalList(statement, parameter, RowBounds.DEFAULT);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <E> List<E> selectOptionalList(String statement, Object parameter, RowBounds rowBounds) {
+    try {
+      MappedStatement ms = configuration.getMappedStatement(statement);
+      List<E> list = executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
+      for (int i = 0; i < list.size(); i++) {
+        list.set(i, (E) OptionalUtil.ofNullable(list.get(i)));
+      }
+      return list;
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
     } finally {

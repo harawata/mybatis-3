@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.StatementType;
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.reflection.ParamNameResolver;
 import org.apache.ibatis.reflection.TypeParameterResolver;
 import org.apache.ibatis.session.Configuration;
@@ -54,7 +55,7 @@ public class MapperMethod {
     Object result;
     switch (command.getType()) {
       case INSERT: {
-      Object param = method.convertArgsToSqlCommandParam(args);
+        Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
@@ -72,6 +73,12 @@ public class MapperMethod {
         if (method.returnsVoid() && method.hasResultHandler()) {
           executeWithResultHandler(sqlSession, args);
           result = null;
+        } else if (method.returnsOptional()) {
+          if (method.returnsMany()) {
+            result = executeForOptionalList(sqlSession, args);
+          } else {
+            result = executeForOptional(sqlSession, args);
+          }
         } else if (method.returnsMany()) {
           result = executeForMany(sqlSession, args);
         } else if (method.returnsMap()) {
@@ -116,8 +123,8 @@ public class MapperMethod {
     MappedStatement ms = sqlSession.getConfiguration().getMappedStatement(command.getName());
     if (!StatementType.CALLABLE.equals(ms.getStatementType())
         && void.class.equals(ms.getResultMaps().get(0).getType())) {
-      throw new BindingException("method " + command.getName()
-          + " needs either a @ResultMap annotation, a @ResultType annotation,"
+      throw new BindingException("method " + command.getName() 
+          + " needs either a @ResultMap annotation, a @ResultType annotation," 
           + " or a resultType attribute in XML so a ResultHandler can be used as a parameter.");
     }
     Object param = method.convertArgsToSqlCommandParam(args);
@@ -158,6 +165,18 @@ public class MapperMethod {
     } else {
       result = sqlSession.<T>selectCursor(command.getName(), param);
     }
+    return result;
+  }
+
+  private Object executeForOptional(SqlSession sqlSession, Object[] args) {
+    Object param = method.convertArgsToSqlCommandParam(args);
+    Object result = sqlSession.selectOptional(command.getName(), param);
+    return result;
+  }
+
+  private Object executeForOptionalList(SqlSession sqlSession, Object[] args) {
+    Object param = method.convertArgsToSqlCommandParam(args);
+    Object result = sqlSession.selectOptionalList(command.getName(), param);
     return result;
   }
 
@@ -270,6 +289,7 @@ public class MapperMethod {
     private final boolean returnsMap;
     private final boolean returnsVoid;
     private final boolean returnsCursor;
+    private final boolean returnsOptional;
     private final Class<?> returnType;
     private final String mapKey;
     private final Integer resultHandlerIndex;
@@ -278,9 +298,17 @@ public class MapperMethod {
 
     public MethodSignature(Configuration configuration, Class<?> mapperInterface, Method method) {
       Type resolvedReturnType = TypeParameterResolver.resolveReturnType(method, mapperInterface);
+      boolean optional = false;
       if (resolvedReturnType instanceof Class<?>) {
         this.returnType = (Class<?>) resolvedReturnType;
+      } else if (OptionalUtil.isOptional(resolvedReturnType)) {
+        this.returnType = OptionalUtil.extractArgument(resolvedReturnType);
+        optional = true;
       } else if (resolvedReturnType instanceof ParameterizedType) {
+        Type[] argTypes = ((ParameterizedType) resolvedReturnType).getActualTypeArguments();
+        if (argTypes.length == 1 && OptionalUtil.isOptional(argTypes[0])) {
+          optional = true;
+        }
         this.returnType = (Class<?>) ((ParameterizedType) resolvedReturnType).getRawType();
       } else {
         this.returnType = method.getReturnType();
@@ -288,6 +316,7 @@ public class MapperMethod {
       this.returnsVoid = void.class.equals(this.returnType);
       this.returnsMany = configuration.getObjectFactory().isCollection(this.returnType) || this.returnType.isArray();
       this.returnsCursor = Cursor.class.equals(this.returnType);
+      this.returnsOptional = optional;
       this.mapKey = getMapKey(method);
       this.returnsMap = this.mapKey != null;
       this.rowBoundsIndex = getUniqueParamIndex(method, RowBounds.class);
@@ -337,6 +366,10 @@ public class MapperMethod {
 
     public boolean returnsCursor() {
       return returnsCursor;
+    }
+
+    public boolean returnsOptional() {
+      return returnsOptional;
     }
 
     private Integer getUniqueParamIndex(Method method, Class<?> paramType) {

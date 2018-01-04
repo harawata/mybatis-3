@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,10 +27,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
 import org.apache.ibatis.reflection.invoker.Invoker;
@@ -53,13 +55,20 @@ public class Reflector {
   private final Map<String, Invoker> getMethods = new HashMap<String, Invoker>();
   private final Map<String, Class<?>> setTypes = new HashMap<String, Class<?>>();
   private final Map<String, Class<?>> getTypes = new HashMap<String, Class<?>>();
+  private Set<String> optionalSetTypes = new HashSet<String>();
   private Constructor<?> defaultConstructor;
+  /**
+   * To store mapped and declared constructor argument types.<br />
+   * If the actual constructor takes <code>Integer</code> and <code>Optional&lt;String&gt;</code>,<br />
+   * the key will be {Integer, String} and the value will be {Integer, Optional}.
+   */
+  private Map<List<Class<?>>, List<Class<?>>> constructorArgs = new HashMap<List<Class<?>>, List<Class<?>>>();
 
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<String, String>();
 
   public Reflector(Class<?> clazz) {
     type = clazz;
-    addDefaultConstructor(clazz);
+    addConstructor(clazz);
     addGetMethods(clazz);
     addSetMethods(clazz);
     addFields(clazz);
@@ -73,19 +82,40 @@ public class Reflector {
     }
   }
 
-  private void addDefaultConstructor(Class<?> clazz) {
+  private void addConstructor(Class<?> clazz) {
     Constructor<?>[] consts = clazz.getDeclaredConstructors();
     for (Constructor<?> constructor : consts) {
-      if (constructor.getParameterTypes().length == 0) {
-        if (canAccessPrivateMethods()) {
-          try {
-            constructor.setAccessible(true);
-          } catch (Exception e) {
-            // Ignored. This is only a final precaution, nothing we can do.
-          }
+      Type[] paramTypes = constructor.getGenericParameterTypes();
+      if (canAccessPrivateMethods()) {
+        try {
+          constructor.setAccessible(true);
+        } catch (Exception e) {
+          // Ignored. This is only a final precaution, nothing we can do.
         }
-        if (constructor.isAccessible()) {
+      }
+      if (constructor.isAccessible()) {
+        if (paramTypes.length == 0) {
           this.defaultConstructor = constructor;
+        } else {
+          List<Class<?>> mappedTypes = new ArrayList<Class<?>>();
+          List<Class<?>> declaredTypes = new ArrayList<Class<?>>();
+          for (Type paramType : paramTypes) {
+            if (paramType instanceof ParameterizedType) {
+              Class<?> rawType = (Class<?>) ((ParameterizedType) paramType).getRawType();
+              declaredTypes.add(rawType);
+              if (OptionalUtil.isOptional(paramType)) {
+                mappedTypes.add(OptionalUtil.extractArgument(paramType));
+              } else {
+                mappedTypes.add(rawType);
+              }
+            } else if (paramType instanceof Class) {
+              declaredTypes.add((Class<?>) paramType);
+              mappedTypes.add((Class<?>) paramType);
+            }
+          }
+          if (!mappedTypes.isEmpty()) {
+            constructorArgs.put(mappedTypes, declaredTypes);
+          }
         }
       }
     }
@@ -147,7 +177,11 @@ public class Reflector {
     if (isValidPropertyName(name)) {
       getMethods.put(name, new MethodInvoker(method));
       Type returnType = TypeParameterResolver.resolveReturnType(method, type);
-      getTypes.put(name, typeToClass(returnType));
+      if (OptionalUtil.isOptional(returnType)) {
+        getTypes.put(name, OptionalUtil.extractArgument(returnType));
+      } else {
+        getTypes.put(name, typeToClass(returnType));
+      }
     }
   }
 
@@ -225,8 +259,8 @@ public class Reflector {
   private void addSetMethod(String name, Method method) {
     if (isValidPropertyName(name)) {
       setMethods.put(name, new MethodInvoker(method));
-      Type[] paramTypes = TypeParameterResolver.resolveParamTypes(method, type);
-      setTypes.put(name, typeToClass(paramTypes[0]));
+      Type paramType = TypeParameterResolver.resolveParamTypes(method, type)[0];
+      addSetType(name, paramType);
     }
   }
 
@@ -282,18 +316,45 @@ public class Reflector {
   }
 
   private void addSetField(Field field) {
-    if (isValidPropertyName(field.getName())) {
-      setMethods.put(field.getName(), new SetFieldInvoker(field));
+    final String name = field.getName();
+    if (isValidPropertyName(name)) {
+      setMethods.put(name, new SetFieldInvoker(field));
       Type fieldType = TypeParameterResolver.resolveFieldType(field, type);
-      setTypes.put(field.getName(), typeToClass(fieldType));
+      addSetType(name, fieldType);
+    }
+  }
+
+  private void addSetType(final String name, Type setterArgType) {
+    if (OptionalUtil.isOptional(setterArgType)) {
+      optionalSetTypes.add(name);
+      setTypes.put(name, OptionalUtil.extractArgument(setterArgType));
+    } else if (setterArgType instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) setterArgType;
+      Type[] args = parameterizedType.getActualTypeArguments();
+      Class<?> rawType = (Class<?>) parameterizedType.getRawType();
+      if (Collection.class.isAssignableFrom(rawType)
+          && args.length == 1 
+          && OptionalUtil.isOptional(args[0])) {
+        optionalSetTypes.add(name);
+        setTypes.put(name, rawType);
+      } else {
+        setTypes.put(name, typeToClass(setterArgType));
+      }
+    } else {
+      setTypes.put(name, typeToClass(setterArgType));
     }
   }
 
   private void addGetField(Field field) {
-    if (isValidPropertyName(field.getName())) {
-      getMethods.put(field.getName(), new GetFieldInvoker(field));
+    String name = field.getName();
+    if (isValidPropertyName(name)) {
+      getMethods.put(name, new GetFieldInvoker(field));
       Type fieldType = TypeParameterResolver.resolveFieldType(field, type);
-      getTypes.put(field.getName(), typeToClass(fieldType));
+      if (OptionalUtil.isOptional(fieldType)) {
+        getTypes.put(name, OptionalUtil.extractArgument(fieldType));
+      } else {
+        getTypes.put(name, typeToClass(fieldType));
+      }
     }
   }
 
@@ -405,6 +466,10 @@ public class Reflector {
     return defaultConstructor != null;
   }
 
+  public List<Class<?>> getDeclaredConstructorArgTypes(List<Class<?>> mappedArgTypes) {
+    return constructorArgs.get(mappedArgTypes);
+  }
+
   public Invoker getSetInvoker(String propertyName) {
     Invoker method = setMethods.get(propertyName);
     if (method == null) {
@@ -485,6 +550,14 @@ public class Reflector {
    */
   public boolean hasGetter(String propertyName) {
     return getMethods.keySet().contains(propertyName);
+  }
+
+  public boolean isSetterTypeOptional(String propertyName) {
+    Class<?> clazz = setTypes.get(propertyName);
+    if (clazz == null) {
+      throw new ReflectionException("There is no setter for property named '" + propertyName + "' in '" + type + "'");
+    }
+    return optionalSetTypes.contains(propertyName);
   }
 
   public String findPropertyName(String name) {

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
 import org.apache.ibatis.reflection.invoker.Invoker;
@@ -75,6 +76,16 @@ public class MetaClass {
       return metaProp.getSetterType(prop.getChildren());
     } else {
       return reflector.getSetterType(prop.getName());
+    }
+  }
+
+  public boolean isSetterTypeOptional(String name) {
+    PropertyTokenizer prop = new PropertyTokenizer(name);
+    if (prop.hasNext()) {
+      MetaClass metaProp = metaClassForProperty(prop.getName());
+      return metaProp.isSetterTypeOptional(prop.getChildren());
+    } else {
+      return reflector.isSetterTypeOptional(prop.getName());
     }
   }
 
@@ -189,6 +200,10 @@ public class MetaClass {
 
   public boolean hasDefaultConstructor() {
     return reflector.hasDefaultConstructor();
+  }
+
+  public List<Class<?>> getDeclaredConstructorArgTypes(List<Class<?>> mappedArgTypes) {
+    return reflector.getDeclaredConstructorArgTypes(mappedArgTypes);
   }
 
 }

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.ibatis.reflection.ExceptionUtil;
 import org.apache.ibatis.reflection.MetaClass;
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.OptionalUtil;
 import org.apache.ibatis.reflection.ReflectionException;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
@@ -144,6 +145,21 @@ public class BeanWrapper extends BaseWrapper {
   }
 
   @Override
+  public boolean isSetterTypeOptional(String name) {
+    PropertyTokenizer prop = new PropertyTokenizer(name);
+    if (prop.hasNext()) {
+      MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
+      if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
+        return metaClass.isSetterTypeOptional(name);
+      } else {
+        return metaValue.isSetterTypeOptional(prop.getChildren());
+      }
+    } else {
+      return metaClass.isSetterTypeOptional(name);
+    }
+  }
+
+  @Override
   public MetaObject instantiatePropertyValue(String name, PropertyTokenizer prop, ObjectFactory objectFactory) {
     MetaObject metaValue;
     Class<?> type = getSetterType(prop.getName());
@@ -161,7 +177,11 @@ public class BeanWrapper extends BaseWrapper {
     try {
       Invoker method = metaClass.getGetInvoker(prop.getName());
       try {
-        return method.invoke(object, NO_ARGUMENTS);
+        Object result = method.invoke(object, NO_ARGUMENTS);
+        if (result != null && OptionalUtil.isOptional(method.getType())) {
+          return OptionalUtil.get(result);
+        }
+        return result;
       } catch (Throwable t) {
         throw ExceptionUtil.unwrapThrowable(t);
       }
@@ -175,6 +195,9 @@ public class BeanWrapper extends BaseWrapper {
   private void setBeanProperty(PropertyTokenizer prop, Object object, Object value) {
     try {
       Invoker method = metaClass.getSetInvoker(prop.getName());
+      if (OptionalUtil.isOptional(method.getType())) {
+        value = OptionalUtil.ofNullable(value);
+      }
       Object[] params = {value};
       try {
         method.invoke(object, params);

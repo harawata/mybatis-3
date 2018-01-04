@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class ResultSetWrapper {
   private final ResultSet resultSet;
   private final TypeHandlerRegistry typeHandlerRegistry;
   private final List<String> columnNames = new ArrayList<String>();
-  private final List<String> classNames = new ArrayList<String>();
+  private final List<Class<?>> columnClasses = new ArrayList<Class<?>>();
   private final List<JdbcType> jdbcTypes = new ArrayList<JdbcType>();
   private final Map<String, Map<Class<?>, TypeHandler<?>>> typeHandlerMap = new HashMap<String, Map<Class<?>, TypeHandler<?>>>();
   private final Map<String, List<String>> mappedColumnNamesMap = new HashMap<String, List<String>>();
@@ -58,7 +58,7 @@ public class ResultSetWrapper {
     for (int i = 1; i <= columnCount; i++) {
       columnNames.add(configuration.isUseColumnLabel() ? metaData.getColumnLabel(i) : metaData.getColumnName(i));
       jdbcTypes.add(JdbcType.forCode(metaData.getColumnType(i)));
-      classNames.add(metaData.getColumnClassName(i));
+      columnClasses.add(resolveClass(metaData.getColumnClassName(i)));
     }
   }
 
@@ -70,8 +70,8 @@ public class ResultSetWrapper {
     return this.columnNames;
   }
 
-  public List<String> getClassNames() {
-    return Collections.unmodifiableList(classNames);
+  public List<Class<?>> getColumnClasses() {
+    return Collections.unmodifiableList(columnClasses);
   }
 
   public JdbcType getJdbcType(String columnName) {
@@ -108,7 +108,7 @@ public class ResultSetWrapper {
       // See issue #59 comment 10
       if (handler == null || handler instanceof UnknownTypeHandler) {
         final int index = columnNames.indexOf(columnName);
-        final Class<?> javaType = resolveClass(classNames.get(index));
+        final Class<?> javaType = columnClasses.get(index);
         if (javaType != null && jdbcType != null) {
           handler = typeHandlerRegistry.getTypeHandler(javaType, jdbcType);
         } else if (javaType != null) {

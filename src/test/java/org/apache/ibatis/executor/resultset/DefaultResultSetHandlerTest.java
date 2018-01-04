@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2016 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.ResultMapping;
 import org.apache.ibatis.mapping.SqlCommandType;
+import org.apache.ibatis.reflection.MetaClass;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
@@ -112,6 +113,8 @@ public class DefaultResultSetHandlerTest {
 
     final ResultSetWrapper rsw = mock(ResultSetWrapper.class);
     when(rsw.getResultSet()).thenReturn(mock(ResultSet.class));
+    final MetaClass metaClass = mock(MetaClass.class);
+    when(metaClass.getDeclaredConstructorArgTypes(any(List.class))).thenReturn(Collections.<Class<?>>emptyList());
 
     final ResultMapping resultMapping = mock(ResultMapping.class);
     final TypeHandler typeHandler = mock(TypeHandler.class);
@@ -119,10 +122,11 @@ public class DefaultResultSetHandlerTest {
     when(resultMapping.getTypeHandler()).thenReturn(typeHandler);
     when(typeHandler.getResult(any(ResultSet.class), any(String.class))).thenThrow(new SQLException("exception"));
     List<ResultMapping> constructorMappings = Collections.singletonList(resultMapping);
+    List<Class<?>> constructorArgsTypes = new ArrayList<Class<?>>();
 
     try {
-      defaultResultSetHandler.createParameterizedResultObject(rsw, null/*resultType*/, constructorMappings,
-              null/*constructorArgTypes*/, null/*constructorArgs*/, null/*columnPrefix*/);
+      defaultResultSetHandler.createParameterizedResultObject(rsw, null/*resultType*/, metaClass, constructorMappings,
+              constructorArgsTypes, null/*constructorArgs*/, null/*columnPrefix*/);
       Assert.fail("Should have thrown ExecutorException");
     } catch (Exception e) {
       Assert.assertTrue("Expected ExecutorException", e instanceof ExecutorException);
