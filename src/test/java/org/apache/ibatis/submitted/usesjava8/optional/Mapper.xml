@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+       Copyright 2009-2016 the original author or authors.
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.apache.ibatis.submitted.usesjava8.optional.Mapper">
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="user">
+    <id column="id" property="id" />
+    <result column="name" property="name" />
+    <result column="dob" property="dob" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.UserWithConstructor" id="userWithConstructor">
+    <constructor>
+      <idArg column="id" javaType="int" />
+      <arg column="name" javaType="string" />
+      <arg column="dob" javaType="java.time.LocalDate" />
+    </constructor>
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.UserWithConstructor" id="userWithConstructor2">
+    <constructor>
+      <idArg column="id" javaType="int" />
+      <arg column="name" javaType="string" />
+    </constructor>
+    <result column="dob" property="dob" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithPet" extends="user">
+    <association property="pet" resultMap="pet"
+      columnPrefix="pet_" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithPets" extends="user">
+    <collection property="pets" resultMap="pet" columnPrefix="pet_" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithPetInline"
+    extends="user">
+    <result column="pet_id" property="pet.id" />
+    <result column="pet_name" property="pet.name" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.Pet" id="pet">
+    <id column="id" property="id" />
+    <result column="name" property="name" />
+  </resultMap>
+
+  <sql id="selectUser"><![CDATA[
+    select *
+    from users
+    where id = #{id}
+  ]]></sql>
+
+  <sql id="selectUserPet"><![CDATA[
+    select u.id, u.name, u.dob, p.id pet_id, p.name pet_name
+    from users u
+    left join pets p on p.user_id = u.id
+    where u.id = #{id}
+  ]]></sql>
+
+  <select id="getBeanWithOptionalAssociationXml" resultMap="userWithPet">
+    <include refid="selectUserPet" />
+  </select>
+
+  <select id="getBeanWithOptionalCollectionXml" resultMap="userWithPets">
+    <include refid="selectUserPet" />
+  </select>
+
+  <select id="getBeanWithOptionalInlineXml" resultMap="userWithPetInline">
+    <include refid="selectUserPet" />
+  </select>
+
+  <select id="getOptionalUserXml" resultMap="user">
+    <include refid="selectUser" />
+  </select>
+
+  <select id="getUserWithConstructorXml" resultMap="userWithConstructor">
+    <include refid="selectUser" />
+  </select>
+
+  <select id="getUserWithConstructorXml2" resultMap="userWithConstructor2">
+    <include refid="selectUser" />
+  </select>
+
+  <select id="getPetByUserId" resultType="org.apache.ibatis.submitted.usesjava8.optional.Pet"><![CDATA[
+    select id, name
+    from pets
+    where user_id = #{userId}
+  ]]></select>
+
+</mapper>
