@@ -18,6 +18,7 @@ package org.apache.ibatis.submitted.usesjava8.optional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.apache.ibatis.annotations.Arg;
 import org.apache.ibatis.annotations.ConstructorArgs;
@@ -44,8 +45,10 @@ public interface Mapper {
   @Select("select * from users where id = #{id}")
   Optional<User> getBeanWithOptionalAssociationAnno(Integer id);
 
-  @ConstructorArgs({ @Arg(id = true, column = "id", javaType = Integer.class), @Arg(column = "name", javaType = String.class), @Arg(column = "dob", javaType = LocalDate.class) })
-  @Select("select id, name, dob from users where id = #{id}")
+  @ConstructorArgs({ @Arg(id = true, column = "id", javaType = Integer.class),
+      @Arg(column = "name", javaType = String.class), @Arg(column = "dob", javaType = LocalDate.class),
+      @Arg(column = "rank", javaType = OptionalInt.class) })
+  @Select("select id, name, dob, rank from users where id = #{id}")
   UserWithConstructor getUserWithConstructor(Integer id);
 
   @Select("select id, name from users where id = #{id}")
@@ -69,6 +72,9 @@ public interface Mapper {
 
   Optional<User> getOptionalUserXml(Integer id);
 
-  @Insert("insert into users (id, name) values(#{id}, #{name})")
+  @Select("select rank from users where id = #{id}")
+  OptionalInt getOptionalRank(Integer id);
+
+  @Insert("insert into users (id, name, rank) values(#{id}, #{name}, #{rank})")
   void insertUser(User user);
 }

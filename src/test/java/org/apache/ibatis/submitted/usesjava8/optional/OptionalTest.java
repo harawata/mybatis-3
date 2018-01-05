@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.jdbc.ScriptRunner;
@@ -60,6 +61,7 @@ public class OptionalTest {
       User user = mapper.getBeanWithOptionalProperties(1);
       assertEquals("User1", user.getName().get());
       assertNotNull(user.getDob().get());
+      assertEquals(10, user.getRank().getAsInt());
     } finally {
       sqlSession.close();
     }
@@ -86,6 +88,7 @@ public class OptionalTest {
       User user = mapper.getBeanWithOptionalProperties(2);
       assertFalse(user.getName().isPresent());
       assertFalse(user.getDob().isPresent());
+      assertFalse(user.getRank().isPresent());
     } finally {
       sqlSession.close();
     }
@@ -98,6 +101,20 @@ public class OptionalTest {
       Mapper mapper = sqlSession.getMapper(Mapper.class);
       UserWithConstructor user = mapper.getUserWithConstructor(1);
       assertEquals("User1", user.getName().get());
+      assertEquals(10, user.getRank().getAsInt());
+    } finally {
+      sqlSession.close();
+    }
+  }
+
+  @Test
+  public void shouldEmptyOptionalConstructorArgWork() {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      UserWithConstructor user = mapper.getUserWithConstructor(2);
+      assertFalse(user.getName().isPresent());
+      assertFalse(user.getRank().isPresent());
     } finally {
       sqlSession.close();
     }
@@ -314,6 +331,30 @@ public class OptionalTest {
   }
 
   @Test
+  public void shouldReturnOptionalInt() {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      OptionalInt rank = mapper.getOptionalRank(1);
+      assertEquals(10, rank.getAsInt());
+    } finally {
+      sqlSession.close();
+    }
+  }
+
+  @Test
+  public void shouldReturnEmptyOptionalInt() {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      OptionalInt rank = mapper.getOptionalRank(2);
+      assertFalse(rank.isPresent());
+    } finally {
+      sqlSession.close();
+    }
+  }
+
+  @Test
   public void shouldInsertAUser() {
     SqlSession sqlSession = sqlSessionFactory.openSession();
     try {
@@ -321,10 +362,12 @@ public class OptionalTest {
       User user = new User();
       user.setId(100);
       user.setName(Optional.of("User100"));
+      user.setRank(OptionalInt.of(99));
       mapper.insertUser(user);
 
       User result = mapper.getBeanWithOptionalProperties(100);
       assertEquals("User100", result.getName().get());
+      assertEquals(99, result.getRank().getAsInt());
     } finally {
       sqlSession.close();
     }

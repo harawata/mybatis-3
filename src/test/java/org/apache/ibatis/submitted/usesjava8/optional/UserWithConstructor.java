@@ -17,17 +17,20 @@ package org.apache.ibatis.submitted.usesjava8.optional;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class UserWithConstructor {
   private Integer id;
   private Optional<String> name;
   private Optional<LocalDate> dob;
+  private OptionalInt rank;
 
-  public UserWithConstructor(Integer id, Optional<String> name, Optional<LocalDate> dob) {
+  public UserWithConstructor(Integer id, Optional<String> name, Optional<LocalDate> dob, OptionalInt rank) {
     super();
     this.id = id;
     this.name = name;
     this.dob = dob;
+    this.rank = rank;
   }
 
   public UserWithConstructor(Integer id, Optional<String> name) {
@@ -46,5 +49,9 @@ public class UserWithConstructor {
 
   public Optional<LocalDate> getDob() {
     return dob;
+  }
+
+  public OptionalInt getRank() {
+    return rank;
   }
 }

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2018 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -137,6 +140,12 @@ public final class TypeHandlerRegistry {
     // mybatis-typehandlers-jsr310
     if (Jdk.dateAndTimeApiExists) {
       Java8TypeHandlersRegistrar.registerDateAndTimeHandlers(this);
+    }
+
+    if (Jdk.optionalExists) {
+      register(OptionalInt.class, OptionalIntTypeHandler.class);
+      register(OptionalLong.class, OptionalLongTypeHandler.class);
+      register(OptionalDouble.class, OptionalDoubleTypeHandler.class);
     }
 
     // issue #273

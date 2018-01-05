@@ -20,7 +20,8 @@ drop table pets if exists;
 create table users (
   id int,
   name varchar(20),
-  dob date
+  dob date,
+  rank int
 );
 
 create table pets (
@@ -29,10 +30,10 @@ create table pets (
   name varchar(20)
 );
 
-insert into users (id, name, dob) values
-(1, 'User1', '1970-01-02'),
-(2, null, null),
-(3, 'User3', null);
+insert into users (id, name, dob, rank) values
+(1, 'User1', '1970-01-02', 10),
+(2, null, null, null),
+(3, 'User3', null, null);
 
 insert into pets (id, user_id, name) values
 (1, 1, 'Pet1'),

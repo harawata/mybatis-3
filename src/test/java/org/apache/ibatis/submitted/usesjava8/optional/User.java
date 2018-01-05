@@ -18,12 +18,14 @@ package org.apache.ibatis.submitted.usesjava8.optional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class User {
   private Integer id;
   private Optional<String> name;
   private Optional<LocalDate> dob;
   private Optional<Pet> pet;
+  private OptionalInt rank;
   private List<Optional<Pet>> pets;
 
   public Integer getId() {
@@ -52,6 +54,14 @@ public class User {
 
   public void setPet(Optional<Pet> pet) {
     this.pet = pet;
+  }
+
+  public OptionalInt getRank() {
+    return rank;
+  }
+
+  public void setRank(OptionalInt rank) {
+    this.rank = rank;
   }
 
   public List<Optional<Pet>> getPets() {

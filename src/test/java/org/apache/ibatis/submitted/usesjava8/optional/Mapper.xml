@@ -33,6 +33,7 @@
       <idArg column="id" javaType="int" />
       <arg column="name" javaType="string" />
       <arg column="dob" javaType="java.time.LocalDate" />
+      <arg column="rank" javaType="java.util.OptionalInt" />
     </constructor>
   </resultMap>
 
@@ -71,7 +72,7 @@
   ]]></sql>
 
   <sql id="selectUserPet"><![CDATA[
-    select u.id, u.name, u.dob, p.id pet_id, p.name pet_name
+    select u.id, u.name, u.dob, u.rank, p.id pet_id, p.name pet_name
     from users u
     left join pets p on p.user_id = u.id
     where u.id = #{id}
