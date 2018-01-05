@@ -15,50 +15,32 @@
  */
 package org.apache.ibatis.reflection;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Optional;
 
-import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.lang.UsesJava8;
 
 /**
  * @author Iwao AVE!
  */
 public class OptionalUtil {
 
-  private static final String OPTIONAL = "java.util.Optional";
-  private static Class<?> OPTIONAL_CLASS = null;
-  private static Method OF_NULLABLE = null;
-  private static Method GET = null;
-  private static Method EMPTY = null;
-
-  static {
-    try {
-      OPTIONAL_CLASS = Resources.classForName(OPTIONAL);
-      OF_NULLABLE = OPTIONAL_CLASS.getMethod("ofNullable", Object.class);
-      GET = OPTIONAL_CLASS.getMethod("get");
-      EMPTY = OPTIONAL_CLASS.getMethod("empty");
-    } catch (Exception e) {
-      // ignore
-    }
-
-  }
-
   public static boolean isOptional(Type type) {
-    if (OPTIONAL_CLASS == null) {
+    if (!Jdk.optionalExists) {
       return false;
     }
     if (type instanceof Class) {
-      return (Class<?>) type == OPTIONAL_CLASS;
+      return (Class<?>) type == Optional.class;
     } else if (type instanceof ParameterizedType) {
-      return (Class<?>) ((ParameterizedType) type).getRawType() == OPTIONAL_CLASS;
+      return (Class<?>) ((ParameterizedType) type).getRawType() == Optional.class;
     }
     return false;
   }
 
   public static boolean isOptionalList(Type type) {
-    if (OPTIONAL_CLASS == null) {
+    if (!Jdk.optionalExists) {
       return false;
     }
     if (type instanceof ParameterizedType) {
@@ -72,43 +54,22 @@ public class OptionalUtil {
     return false;
   }
 
+  @UsesJava8
   public static Object ofNullable(Object value) {
-    if (OPTIONAL_CLASS == null) {
-      return null;
-    }
-    try {
-      return OF_NULLABLE.invoke(null, value);
-    } catch (Exception e) {
-      return null;
-    }
+    return Optional.ofNullable(value);
   }
 
+  @UsesJava8
   public static Object get(Object optional) {
-    if (OPTIONAL_CLASS == null) {
-      return null;
-    }
-    try {
-      return GET.invoke(optional, (Object[]) null);
-    } catch (Exception e) {
-      return null;
-    }
+    return ((Optional<?>)optional).get();
   }
 
+  @UsesJava8
   public static Object empty() {
-    if (OPTIONAL_CLASS == null) {
-      return null;
-    }
-    try {
-      return EMPTY.invoke(null, (Object[]) null);
-    } catch (Exception e) {
-      return null;
-    }
+    return Optional.empty();
   }
 
   public static Class<?> extractArgument(Type optional) {
-    if (OPTIONAL_CLASS == null) {
-      return null;
-    }
     ParameterizedType parameterizedType = (ParameterizedType) optional;
     Type argType = parameterizedType.getActualTypeArguments()[0];
     if (argType instanceof ParameterizedType) {
