@@ -70,6 +70,10 @@ public class OptionalUtil {
   }
 
   public static Class<?> extractArgument(Type optional) {
+    if (!(optional instanceof ParameterizedType)) {
+      // Proxied objects don't have type parameter info.
+      return Object.class;
+    }
     ParameterizedType parameterizedType = (ParameterizedType) optional;
     Type argType = parameterizedType.getActualTypeArguments()[0];
     if (argType instanceof ParameterizedType) {

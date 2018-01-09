@@ -355,6 +355,35 @@ public class OptionalTest {
   }
 
   @Test
+  public void shouldLoadLazyOptionalAssociation() {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      User user = mapper.getUserWithLazyPet(1);
+      assertEquals("User1", user.getName().get());
+      assertTrue(user.getDob().isPresent());
+      assertTrue(user.getPet().isPresent());
+    } finally {
+      sqlSession.close();
+    }
+  }
+
+  @Test
+  public void shouldLoadLazyOptionalCollection() {
+    SqlSession sqlSession = sqlSessionFactory.openSession();
+    try {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      User user = mapper.getUserWithLazyPets(3);
+      assertEquals("User3", user.getName().get());
+      assertEquals(2, user.getPets().size());
+      assertTrue(user.getPets().get(0).isPresent());
+      assertTrue(user.getPets().get(1).isPresent());
+    } finally {
+      sqlSession.close();
+    }
+  }
+
+  @Test
   public void shouldInsertAUser() {
     SqlSession sqlSession = sqlSessionFactory.openSession();
     try {

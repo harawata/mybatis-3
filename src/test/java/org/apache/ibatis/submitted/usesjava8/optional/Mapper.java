@@ -75,6 +75,10 @@ public interface Mapper {
   @Select("select rank from users where id = #{id}")
   OptionalInt getOptionalRank(Integer id);
 
+  User getUserWithLazyPet(Integer id);
+
+  User getUserWithLazyPets(Integer id);
+
   @Insert("insert into users (id, name, rank) values(#{id}, #{name}, #{rank})")
   void insertUser(User user);
 }

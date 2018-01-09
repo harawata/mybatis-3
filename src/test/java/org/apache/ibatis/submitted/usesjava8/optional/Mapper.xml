@@ -50,8 +50,16 @@
       columnPrefix="pet_" />
   </resultMap>
 
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithLazyPet" extends="user">
+    <association property="pet" fetchType="lazy" select="getPetByUserId" column="id" />
+  </resultMap>
+
   <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithPets" extends="user">
     <collection property="pets" resultMap="pet" columnPrefix="pet_" />
+  </resultMap>
+
+  <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithLazyPets" extends="user">
+    <collection property="pets" fetchType="lazy" select="getPetByUserId" column="id" />
   </resultMap>
 
   <resultMap type="org.apache.ibatis.submitted.usesjava8.optional.User" id="userWithPetInline"
@@ -99,6 +107,14 @@
   </select>
 
   <select id="getUserWithConstructorXml2" resultMap="userWithConstructor2">
+    <include refid="selectUser" />
+  </select>
+
+  <select id="getUserWithLazyPet" resultMap="userWithLazyPet">
+    <include refid="selectUser" />
+  </select>
+
+  <select id="getUserWithLazyPets" resultMap="userWithLazyPets">
     <include refid="selectUser" />
   </select>
 
