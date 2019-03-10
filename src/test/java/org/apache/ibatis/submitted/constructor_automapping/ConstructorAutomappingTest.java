@@ -59,4 +59,16 @@ class ConstructorAutomappingTest {
     }
   }
 
+  @Test
+  void shouldNotMapTheSameColumnsTwice() {
+    try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
+      Mapper mapper = sqlSession.getMapper(Mapper.class);
+      Author author = mapper.unmappedColumns(100);
+      assertEquals(Integer.valueOf(100), author.getId());
+      assertEquals("Author1", author.getName());
+      assertNull(author.getAid(), "The column 'aid' is used for constructor mapping.");
+      assertFalse(author.isPasswordSetterCalled(), "Setter should not be called.");
+    }
+  }
+
 }

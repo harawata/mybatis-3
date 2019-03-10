@@ -21,4 +21,6 @@ public interface Mapper {
 
   List<Article> nestedConstructorAutomapping();
 
+  Author unmappedColumns(Integer id);
+
 }

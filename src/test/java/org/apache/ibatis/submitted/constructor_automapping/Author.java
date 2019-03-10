@@ -18,15 +18,28 @@ package org.apache.ibatis.submitted.constructor_automapping;
 public class Author {
 
   private final Integer id;
+  private String password;
   private String name;
+  private Integer aid;
+  private boolean passwordSetterCalled;
 
-  private Author(Integer id) {
+  private Author(Integer id, String password) {
     super();
     this.id = id;
+    this.password = password;
   }
 
   public Integer getId() {
     return id;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+    passwordSetterCalled = true;
   }
 
   public String getName() {
@@ -35,5 +48,17 @@ public class Author {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public Integer getAid() {
+    return aid;
+  }
+
+  public void setAid(Integer aid) {
+    this.aid = aid;
+  }
+
+  public boolean isPasswordSetterCalled() {
+    return passwordSetterCalled;
   }
 }

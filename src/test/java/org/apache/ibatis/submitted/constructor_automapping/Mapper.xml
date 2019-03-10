@@ -44,4 +44,10 @@
     left join authors on authors.id = author_id
   ]]></select>
 
+  <select id="unmappedColumns" resultMap="authorRM"><![CDATA[
+    select id aid, password, name
+    from authors
+    where id = #{id}
+  ]]></select>
+
 </mapper>
