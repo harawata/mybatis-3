@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.ibatis.annotations.Arg;
 import org.apache.ibatis.annotations.CacheNamespace;
@@ -51,6 +53,7 @@ import org.apache.ibatis.annotations.Options.FlushCachePolicy;
 import org.apache.ibatis.annotations.Property;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
+import org.apache.ibatis.annotations.ResultMapProvider;
 import org.apache.ibatis.annotations.ResultType;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
@@ -65,6 +68,7 @@ import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.builder.CacheRefResolver;
 import org.apache.ibatis.builder.IncompleteElementException;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.apache.ibatis.builder.ResultMapResolver;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
@@ -227,13 +231,37 @@ public class MapperAnnotationBuilder {
   }
 
   private String parseResultMap(Method method) {
-    Class<?> returnType = getReturnType(method);
-    ConstructorArgs args = method.getAnnotation(ConstructorArgs.class);
-    Results results = method.getAnnotation(Results.class);
-    TypeDiscriminator typeDiscriminator = method.getAnnotation(TypeDiscriminator.class);
     String resultMapId = generateResultMapName(method);
-    applyResultMap(resultMapId, returnType, argsIf(args), resultsIf(results), typeDiscriminator);
+    Class<?> returnType = getReturnType(method);
+    ResultMapProvider resultMapProvider = method.getAnnotation(ResultMapProvider.class);
+    if (resultMapProvider != null) {
+      Class<?> providerClass = resolveResultMapProviderClass(resultMapProvider);
+      try {
+        // TODO: static method
+        Object providerInstance = providerClass.getConstructor().newInstance();
+        Method providerMethod = providerClass.getMethod(resultMapProvider.method(), ResultMapProviderContext.class);
+        ResultMapResolver resultMapResolver = new ResultMapResolver(assistant, resultMapId, returnType);
+        ResultMapProviderContext context = new ResultMapProviderContext(configuration, type, method,
+            resultMapResolver);
+        providerMethod.invoke(providerInstance, context);
+        resultMapResolver.resolve();
+      } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+          | InvocationTargetException | InstantiationException e) {
+        // TODO: error handling
+        throw new BuilderException("Unable to invoke result map provider method", e);
+      }
+    } else {
+      ConstructorArgs args = method.getAnnotation(ConstructorArgs.class);
+      Results results = method.getAnnotation(Results.class);
+      TypeDiscriminator typeDiscriminator = method.getAnnotation(TypeDiscriminator.class);
+      applyResultMap(resultMapId, returnType, argsIf(args), resultsIf(results), typeDiscriminator);
+    }
     return resultMapId;
+  }
+
+  private Class<?> resolveResultMapProviderClass(ResultMapProvider resultMapProvider) {
+    return Stream.of(resultMapProvider.value(), resultMapProvider.type()).filter(c -> !void.class.equals(c)).findFirst()
+        .orElseThrow(() -> new BuilderException("Need to specify value() or type().")); // TODO: msg
   }
 
   private String generateResultMapName(Method method) {
