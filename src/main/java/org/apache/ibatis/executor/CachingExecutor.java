@@ -94,11 +94,11 @@ public class CachingExecutor implements Executor {
       throws SQLException {
     Cache cache = ms.getCache();
     if (cache != null) {
-      flushCacheIfRequired(ms);
+      boolean cacheFlushed = flushCacheIfRequired(ms);
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
-        List<E> list = (List<E>) tcm.getObject(cache, key);
+        List<E> list = cacheFlushed ? null : (List<E>) tcm.getObject(cache, key);
         if (list == null) {
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
           tcm.putObject(cache, key, list); // issue #578 and #116
@@ -161,11 +161,13 @@ public class CachingExecutor implements Executor {
     delegate.clearLocalCache();
   }
 
-  private void flushCacheIfRequired(MappedStatement ms) {
+  private boolean flushCacheIfRequired(MappedStatement ms) {
     Cache cache = ms.getCache();
     if (cache != null && ms.isFlushCacheRequired()) {
       tcm.clear(cache);
+      return true;
     }
+    return false;
   }
 
   @Override
