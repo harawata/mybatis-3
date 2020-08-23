@@ -31,7 +31,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 import org.junit.jupiter.api.Test;
 
-public class CachingExecutorTest {
+class CachingExecutorTest {
   @Test
   void shouldSkipCacheLookupAfterFlushingCache() throws Exception {
     // gh-1960
@@ -50,7 +50,8 @@ public class CachingExecutorTest {
         new StaticSqlSource(configuration, "sql"), null).useCache(true).cache(cache).flushCacheRequired(true).build();
     when(delegate.query(mappedStatement, null, null, null, cacheKey, boundSql)).thenReturn(queryResult);
     cachingExecutor.query(mappedStatement, null, null, null, cacheKey, boundSql);
-    verify(transactionalCacheManager, times(1)).putObject(cache, cacheKey, queryResult);
+    // Result should not be cached if flushCache is enabled
+    verify(transactionalCacheManager, times(0)).putObject(cache, cacheKey, queryResult);
     verify(transactionalCacheManager, times(0)).getObject(cache, cacheKey);
   }
 }
