@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ public class CachingExecutor implements Executor {
 
   public CachingExecutor(Executor delegate) {
     this.delegate = delegate;
-    delegate.setExecutorWrapper(this);
   }
 
   @Override
@@ -170,7 +169,7 @@ public class CachingExecutor implements Executor {
 
   @Override
   public void setExecutorWrapper(Executor executor) {
-    throw new UnsupportedOperationException("This method should not be called");
+    delegate.setExecutorWrapper(executor);
   }
 
 }
